@@ -101,7 +101,7 @@ const generateTestCaseId = () => {
   return `TC-${timestamp}`;
 };
 
- 
+
 
 const testCaseSchema = new mongoose.Schema({
   testCaseId: {
@@ -110,20 +110,16 @@ const testCaseSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
-  project: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: Project,
-    required: true
-  },
-  module: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: Module,
-    required: true
-  },
+
   testSuite: {
     type: mongoose.Schema.Types.ObjectId,
     ref: TestSuite,
     required: true
+  },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    required: true,
   },
   title: {
     type: String,

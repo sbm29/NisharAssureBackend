@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { protect, authorize } = require('../middleware/auth');
 const TestSuite = require('../models/TestSuite');
@@ -115,6 +114,54 @@ router.delete('/:id', protect, authorize(['admin', 'test_manager']), async (req,
     res.json({ message: 'Test suite deleted successfully' });
   } catch (error) {
     console.error('Delete test suite error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Move test suite to another module
+router.post('/:id/move', protect, authorize(['admin', 'test_manager']), async (req, res) => {
+  try {
+    const { targetModuleId } = req.body;
+    const testSuite = await TestSuite.findById(req.params.id);
+    if (!testSuite) {
+      return res.status(404).json({ message: 'Test suite not found' });
+    }
+    // Remove from old module
+    if (testSuite.module) {
+      await Module.findByIdAndUpdate(testSuite.module, { $pull: { testSuites: testSuite._id } });
+    }
+    // Add to new module
+    await Module.findByIdAndUpdate(targetModuleId, { $addToSet: { testSuites: testSuite._id } });
+    testSuite.module = targetModuleId;
+    await testSuite.save();
+    res.json({ message: 'Test suite moved successfully', testSuite });
+  } catch (error) {
+    console.error('Move test suite error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Copy test suite to another module
+router.post('/:id/copy', protect, authorize(['admin', 'test_manager']), async (req, res) => {
+  try {
+    const { targetModuleId } = req.body;
+    const testSuite = await TestSuite.findById(req.params.id);
+    if (!testSuite) {
+      return res.status(404).json({ message: 'Test suite not found' });
+    }
+    // Create a copy
+    const copiedSuite = await TestSuite.create({
+      name: testSuite.name + ' (Copy)',
+      description: testSuite.description,
+      module: targetModuleId,
+      project: testSuite.project,
+      createdBy: req.user.id
+    });
+    // Add to new module
+    await Module.findByIdAndUpdate(targetModuleId, { $addToSet: { testSuites: copiedSuite._id } });
+    res.status(201).json({ message: 'Test suite copied successfully', testSuite: copiedSuite });
+  } catch (error) {
+    console.error('Copy test suite error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

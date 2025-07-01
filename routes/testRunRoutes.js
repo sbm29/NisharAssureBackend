@@ -47,7 +47,7 @@ router.get('/project/:projectId', protect, async (req, res) => {
  * @desc    Create a new test run
  * @access  Private
  */
-router.post('/', protect, async (req, res) => {
+router.post('/create', protect, async (req, res) => {
   try {
     const { name, description, projectId, testCaseIds } = req.body;
     
