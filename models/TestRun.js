@@ -44,7 +44,8 @@ const testRunSchema = new mongoose.Schema({
   testCases: [{
     testCaseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'TestCase'
+      ref: 'TestCase',
+      required: true
     },
     // Current status of the test case in this run
     status: {

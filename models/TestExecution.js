@@ -1,14 +1,12 @@
-
-/**
- * TestExecution Model
- * 
- * Defines the schema for test executions in the application.
- * A test execution represents a single run of a test case with its results.
- */
-
 const mongoose = require('mongoose');
 
+
 const testExecutionSchema = new mongoose.Schema({
+  testRunId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TestRun',
+    required: true
+  },
   testCaseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TestCase',
@@ -30,11 +28,15 @@ const testExecutionSchema = new mongoose.Schema({
   executedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  executedAt: {
+    type: Date,
+    default: Date.now
+  },
+  isFinal: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
 });
-
-const TestExecution = mongoose.model('TestExecution', testExecutionSchema);
-
-module.exports = TestExecution;

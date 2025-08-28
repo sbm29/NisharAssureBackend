@@ -29,12 +29,12 @@ const router = express.Router();
 router.get('/project/:projectId', protect, async (req, res) => {
   try {
     const { projectId } = req.params;
-    
+
     // Find all test runs for the project and populate creator information
     const testRuns = await TestRun.find({ projectId })
       .populate('createdBy', 'name')
       .sort('-createdAt');
-    
+
     res.json(testRuns);
   } catch (error) {
     console.error('Get test runs error:', error);
@@ -50,14 +50,14 @@ router.get('/project/:projectId', protect, async (req, res) => {
 router.post('/create', protect, async (req, res) => {
   try {
     const { name, description, projectId, testCaseIds } = req.body;
-    
+
     // Initialize test run with provided test cases
     const testCases = testCaseIds ? testCaseIds.map(id => ({
       testCaseId: id,
       status: 'Not Executed',
       history: []
     })) : [];
-    
+
     // Create the test run
     const testRun = await TestRun.create({
       name,
@@ -67,7 +67,7 @@ router.post('/create', protect, async (req, res) => {
       createdBy: req.user.id,
       status: 'In Progress'
     });
-    
+
     res.status(201).json(testRun);
   } catch (error) {
     console.error('Create test run error:', error);
@@ -88,15 +88,15 @@ router.get('/:id', protect, async (req, res) => {
       .populate('createdBy', 'name')
       .populate({
         path: 'testCases.testCaseId',
-        select: 'title description priority type steps expectedResults'
+        select: 'title description priority type steps expectedResults testCaseId'
       })
       .populate('testCases.executedBy', 'name')
       .populate('testCases.history.executedBy', 'name');
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Get test run error:', error);
@@ -112,28 +112,28 @@ router.get('/:id', protect, async (req, res) => {
 router.put('/:id', protect, async (req, res) => {
   try {
     const { name, description, status } = req.body;
-    
+
     const testRun = await TestRun.findById(req.params.id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     // Update test run fields
     testRun.name = name || testRun.name;
     testRun.description = description || testRun.description;
-    
+
     // Handle status changes and set end date if completed
     if (status) {
       testRun.status = status;
-      
+
       if (status === 'Completed') {
         testRun.endDate = new Date();
       }
     }
-    
+
     await testRun.save();
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Update test run error:', error);
@@ -149,13 +149,13 @@ router.put('/:id', protect, async (req, res) => {
 router.delete('/:id', protect, async (req, res) => {
   try {
     const testRun = await TestRun.findById(req.params.id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     await testRun.deleteOne();
-    
+
     res.json({ message: 'Test run deleted successfully' });
   } catch (error) {
     console.error('Delete test run error:', error);
@@ -171,27 +171,27 @@ router.delete('/:id', protect, async (req, res) => {
 router.post('/:id/test-cases', protect, async (req, res) => {
   try {
     const { testCaseIds } = req.body;
-    
+
     const testRun = await TestRun.findById(req.params.id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     // Filter out test cases that are already in the run
     const existingTestCaseIds = testRun.testCases.map(tc => tc.testCaseId.toString());
     const newTestCaseIds = testCaseIds.filter(id => !existingTestCaseIds.includes(id));
-    
+
     // Add new test cases to the test run
     const newTestCases = newTestCaseIds.map(id => ({
       testCaseId: id,
       status: 'Not Executed',
       history: []
     }));
-    
+
     testRun.testCases = [...testRun.testCases, ...newTestCases];
     await testRun.save();
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Add test cases error:', error);
@@ -207,20 +207,20 @@ router.post('/:id/test-cases', protect, async (req, res) => {
 router.delete('/:id/test-cases/:testCaseId', protect, async (req, res) => {
   try {
     const { id, testCaseId } = req.params;
-    
+
     const testRun = await TestRun.findById(id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     // Remove test case from the test run
     testRun.testCases = testRun.testCases.filter(
       tc => tc.testCaseId.toString() !== testCaseId
     );
-    
+
     await testRun.save();
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Remove test case error:', error);
@@ -237,25 +237,35 @@ router.post('/:id/test-cases/:testCaseId/execute', protect, async (req, res) => 
   try {
     const { id, testCaseId } = req.params;
     const { status, actualResults, notes } = req.body;
-    
+
+    console.log('Executing test case:', { id, testCaseId, status, actualResults, notes });
+
     const testRun = await TestRun.findById(id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
-    // Find the test case in the test run
+
+    // // Find the test case in the test run
     const testCaseIndex = testRun.testCases.findIndex(
-      tc => tc.testCaseId.toString() === testCaseId
+      tc => tc.testCaseId.equals(testCaseId)
     );
-    
+
     if (testCaseIndex === -1) {
       return res.status(404).json({ message: 'Test case not found in this test run' });
     }
-    
-    // Get the current test case data
+
+    // // Find the test case in the test run
+    // const testCase = testRun.testCases.find(tc => tc.testCaseId.equals(testCaseId));
+
+    // if (!testCase) {
+    //   return res.status(404).json({ message: 'Test case not found in this test run' });
+    // }
+
+
+    // // Get the current test case data
     const testCase = testRun.testCases[testCaseIndex];
-    
+
     // Add current status to history if it's not the first execution
     // This preserves the complete execution history
     if (testCase.executedAt) {
@@ -267,16 +277,16 @@ router.post('/:id/test-cases/:testCaseId/execute', protect, async (req, res) => 
         executedAt: testCase.executedAt
       });
     }
-    
+
     // Update the test case execution with new data
     testRun.testCases[testCaseIndex].status = status;
     testRun.testCases[testCaseIndex].actualResults = actualResults;
     testRun.testCases[testCaseIndex].notes = notes;
     testRun.testCases[testCaseIndex].executedBy = req.user.id;
     testRun.testCases[testCaseIndex].executedAt = new Date();
-    
+
     await testRun.save();
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Execute test case error:', error);
@@ -292,23 +302,23 @@ router.post('/:id/test-cases/:testCaseId/execute', protect, async (req, res) => 
 router.get('/:id/test-cases/:testCaseId/history', protect, async (req, res) => {
   try {
     const { id, testCaseId } = req.params;
-    
+
     const testRun = await TestRun.findById(id)
       .populate('testCases.history.executedBy', 'name');
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     // Find the test case in the test run
     const testCase = testRun.testCases.find(
       tc => tc.testCaseId.toString() === testCaseId
     );
-    
+
     if (!testCase) {
       return res.status(404).json({ message: 'Test case not found in this test run' });
     }
-    
+
     res.json(testCase.history);
   } catch (error) {
     console.error('Get test case history error:', error);
@@ -324,11 +334,11 @@ router.get('/:id/test-cases/:testCaseId/history', protect, async (req, res) => {
 router.get('/:id/metrics', protect, async (req, res) => {
   try {
     const testRun = await TestRun.findById(req.params.id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     // Calculate metrics for reporting and dashboards
     const totalTestCases = testRun.testCases.length;
     const executed = testRun.testCases.filter(tc => tc.status !== 'Not Executed').length;
@@ -337,10 +347,10 @@ router.get('/:id/metrics', protect, async (req, res) => {
     const blocked = testRun.testCases.filter(tc => tc.status === 'Blocked').length;
     const rejected = testRun.testCases.filter(tc => tc.status === 'Rejected').length;
     const notExecuted = totalTestCases - executed;
-    
+
     // Calculate pass rate percentage
     const passRate = totalTestCases > 0 ? Math.round((passed / totalTestCases) * 100) : 0;
-    
+
     res.json({
       totalTestCases,
       executed,
@@ -365,16 +375,16 @@ router.get('/:id/metrics', protect, async (req, res) => {
 router.put('/:id/complete', protect, async (req, res) => {
   try {
     const testRun = await TestRun.findById(req.params.id);
-    
+
     if (!testRun) {
       return res.status(404).json({ message: 'Test run not found' });
     }
-    
+
     testRun.status = 'Completed';
     testRun.endDate = new Date();
-    
+
     await testRun.save();
-    
+
     res.json(testRun);
   } catch (error) {
     console.error('Complete test run error:', error);
