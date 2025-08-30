@@ -16,5 +16,10 @@ router.put('/:id', protect, authorize('admin'), userController.updateUser);
 
 // User profile routes (accessible by the user themselves)
 router.put('/:id/profile', protect, userController.updateProfile);
+// ✅ Add new routes
+router.post('/', protect, authorize('admin'), userController.addUser);
+router.delete('/:id', protect, authorize('admin'), userController.deleteUser);
+
+
 
 module.exports = router;

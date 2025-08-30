@@ -4,6 +4,67 @@ const User = require('../models/User');
 //const UserInvite = require('../models/UserInvite');
 const crypto = require('crypto');
 
+// Add new user (admin only)
+exports.addUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (!['admin', 'test_manager', 'test_engineer'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role,
+    });
+
+    res.status(201).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+  } catch (error) {
+    console.error('Add user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete user (admin only)
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await user.deleteOne();
+
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+
 // Get all users (admin only)
 exports.getUsers = async (req, res) => {
   try {

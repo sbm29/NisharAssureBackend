@@ -18,9 +18,12 @@ const testRunRoutes = require('./routes/testRunRoutes');
 const app = express();
 
 const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"];
+const cookieParser = require("cookie-parser");
+
 
 
 // Middlewares
+app.use(cookieParser());
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -30,7 +33,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-
+    credentials: true,
   })
 );
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -50,10 +53,7 @@ if (!process.env.MONGO_URI) {
   process.exit(1);
 }
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
