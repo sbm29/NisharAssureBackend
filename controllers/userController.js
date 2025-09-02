@@ -43,20 +43,20 @@ exports.addUser = async (req, res) => {
   }
 };
 
-// Delete user (admin only)
-exports.deleteUser = async (req, res) => {
+// Soft delete user (admin only)
+exports.softDeleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true }
+    );
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    await user.deleteOne();
-
-    res.status(200).json({ message: 'User deleted successfully' });
+    res.status(200).json({ message: 'User deactivated (soft deleted)' });
   } catch (error) {
-    console.error('Delete user error:', error);
+    console.error('Soft delete user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -65,10 +65,10 @@ exports.deleteUser = async (req, res) => {
 
 
 
-// Get all users (admin only)
+// Get all active users (admin only)
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find({ isActive: true }).select('-password');
     res.status(200).json(users);
   } catch (error) {
     console.error('Get users error:', error);

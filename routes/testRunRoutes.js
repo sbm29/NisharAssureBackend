@@ -34,7 +34,7 @@ router.get('/project/:projectId', protect, async (req, res) => {
     const testRuns = await TestRun.find({ projectId })
       .populate('createdBy', 'name')
       .sort('-createdAt');
-
+    console.log('Fetched test runs for project:', projectId, testRuns.length);
     res.json(testRuns);
   } catch (error) {
     console.error('Get test runs error:', error);
@@ -67,7 +67,7 @@ router.post('/create', protect, async (req, res) => {
       createdBy: req.user.id,
       status: 'In Progress'
     });
-
+    console.log('Created test run:', testRun);
     res.status(201).json(testRun);
   } catch (error) {
     console.error('Create test run error:', error);

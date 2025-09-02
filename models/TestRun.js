@@ -99,7 +99,8 @@ const testRunSchema = new mongoose.Schema({
   // User who created this test run
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    required: true
   }
 }, {
   // Automatically add createdAt and updatedAt timestamps

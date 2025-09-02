@@ -18,7 +18,8 @@ router.put('/:id', protect, authorize('admin'), userController.updateUser);
 router.put('/:id/profile', protect, userController.updateProfile);
 // ✅ Add new routes
 router.post('/', protect, authorize('admin'), userController.addUser);
-router.delete('/:id', protect, authorize('admin'), userController.deleteUser);
+// Soft delete route
+router.put('/:id/deactivate', protect, authorize('admin'), userController.softDeleteUser);
 
 
 
