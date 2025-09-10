@@ -21,30 +21,39 @@ const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"];
 const cookieParser = require("cookie-parser");
 
 
-
-// Middlewares
-app.use(cookieParser());
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-app.use(helmet({ contentSecurityPolicy: false }));
-//app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-app.use(express.json());
-
 // Load env file based on NODE_ENV
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 dotenv.config({ path: envFile });
 console.log("🔍 Loaded ENV File:", envFile);
 console.log("🔍 Current MONGO_URI:", process.env.MONGO_URI);
+
+// Middlewares
+app.use(cookieParser());
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
+
+app.use(
+  cors({
+    origin: true, // Reflects request origin automatically
+    credentials: true,
+  })
+);
+
+
+app.use(helmet({ contentSecurityPolicy: false }));
+//app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(express.json());
+
 
 
 // Connect to MongoDB
